@@ -9,19 +9,19 @@
 :root{--bg:#0e1024;--card:rgba(255,255,255,.06);--line:rgba(255,255,255,.12);--text:#eef0ff;--muted:#9aa0c8;--accent:#8a7bff;--accent2:#4fd1c5}
 *{box-sizing:border-box}
 body{margin:0;font-family:-apple-system,"Apple SD Gothic Neo","Malgun Gothic",Pretendard,system-ui,sans-serif;color:var(--text);background:radial-gradient(1200px 600px at 70% -10%,rgba(138,123,255,.25),transparent),radial-gradient(900px 500px at 10% 110%,rgba(79,209,197,.18),transparent),var(--bg);min-height:100vh}
-.app{max-width:760px;margin:0 auto;padding:48px 20px 64px}
+.app{max-width:780px;margin:0 auto;padding:48px 20px 64px}
 .header{text-align:center;margin-bottom:32px}
 .header h1{font-size:2rem;margin:0 0 8px;letter-spacing:-.02em}
 .tagline{color:var(--muted);margin:0}
 .card,.result-card,.coord{background:var(--card);border:1px solid var(--line);border-radius:18px}
 .question{padding:36px 28px;text-align:center}
-.question h2{font-size:1.4rem;margin:14px 0 28px}
+.question h2{font-size:1.4rem;margin:14px 0 26px;line-height:1.4}
 .progress{display:flex;gap:8px;justify-content:center;margin-bottom:18px}
 .dot{width:28px;height:5px;border-radius:99px;background:var(--line);transition:.25s}
 .dot.on{background:linear-gradient(90deg,var(--accent),var(--accent2))}
 .step-label{color:var(--muted);font-size:.85rem;letter-spacing:.04em;margin:0}
-.options{display:flex;flex-direction:column;gap:12px}
-.option{padding:16px;font-size:1.05rem;color:var(--text);background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:14px;cursor:pointer;transition:.18s}
+.options{display:flex;flex-direction:column;gap:10px}
+.option{padding:15px;font-size:1.02rem;color:var(--text);background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:14px;cursor:pointer;transition:.18s;text-align:center}
 .option:hover{border-color:var(--accent);background:rgba(138,123,255,.16);transform:translateY(-1px)}
 .coord{display:flex;flex-direction:column;gap:6px;padding:16px 20px;margin-bottom:20px;text-align:center}
 .coord span{color:var(--muted);font-size:.85rem}
@@ -31,14 +31,14 @@ body{margin:0;font-family:-apple-system,"Apple SD Gothic Neo","Malgun Gothic",Pr
 .chip.active,.chip:hover{color:#fff;border-color:var(--accent);background:rgba(138,123,255,.18)}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .result-card{padding:18px;transition:.18s;display:block;text-decoration:none;color:inherit}
-.go{display:inline-block;margin-top:10px;font-size:.8rem;color:var(--accent);font-weight:600}
-.result-card:hover .go{text-decoration:underline}
 .result-card:hover{transform:translateY(-2px);border-color:var(--accent)}
 .result-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
-.emoji{font-size:1.4rem}
+.cat-icon{display:inline-flex;align-items:center}
 .score{font-size:.8rem;font-weight:600;color:var(--accent2);background:rgba(79,209,197,.12);padding:4px 10px;border-radius:99px}
 .result-card h3{margin:0 0 6px;font-size:1.05rem}
 .why{margin:0;color:var(--muted);font-size:.9rem;line-height:1.5}
+.go{display:inline-block;margin-top:12px;font-size:.82rem;color:var(--accent);font-weight:600}
+.result-card:hover .go{text-decoration:underline}
 .empty{grid-column:1/-1;text-align:center;color:var(--muted)}
 .restart{display:block;margin:28px auto 0;padding:14px 28px;font-size:1rem;color:#fff;cursor:pointer;background:linear-gradient(90deg,var(--accent),var(--accent2));border:none;border-radius:99px;transition:.18s}
 .restart:hover{opacity:.9;transform:translateY(-1px)}
@@ -63,15 +63,43 @@ const CATEGORIES = [
   {key:'ALL',label:'전체'},{key:'MOVIE',label:'영화'},{key:'NETFLIX',label:'넷플릭스'},
   {key:'MUSIC',label:'음악'},{key:'BOOK',label:'책'},{key:'YOUTUBE',label:'유튜브'},
 ];
-const CATEGORY_EMOJI = {MOVIE:'🎬',NETFLIX:'📺',MUSIC:'🎵',BOOK:'📚',YOUTUBE:'▶️'};
 
+// 카테고리별 로고 아이콘
+function CategoryIcon({cat}){
+  switch(cat){
+    case 'YOUTUBE': return (
+      <svg className="cat-icon" width="30" height="22" viewBox="0 0 28 20"><rect width="28" height="20" rx="5" fill="#FF0000"/><path d="M11 6 L20 10 L11 14 Z" fill="#fff"/></svg>);
+    case 'MUSIC': return (
+      <svg className="cat-icon" width="26" height="26" viewBox="0 0 28 28"><circle cx="14" cy="14" r="13" fill="#FF0000"/><circle cx="14" cy="14" r="7.5" fill="none" stroke="#fff" strokeWidth="1.6"/><path d="M12 10.5 L18.5 14 L12 17.5 Z" fill="#fff"/></svg>);
+    case 'NETFLIX': return (
+      <svg className="cat-icon" width="26" height="26" viewBox="0 0 28 28"><rect width="28" height="28" rx="6" fill="#141414"/><path d="M9 5 h3 l4 11 V5 h3 v18 h-3 l-4 -11 V23 h-3 z" fill="#E50914"/></svg>);
+    case 'BOOK': return (
+      <svg className="cat-icon" width="26" height="26" viewBox="0 0 28 28"><path d="M4 5 h7 a3 3 0 0 1 3 2 a3 3 0 0 1 3 -2 h7 v17 h-7 a3 3 0 0 0 -3 2 a3 3 0 0 0 -3 -2 h-7 z" fill="#4fd1c5"/><path d="M14 7 v17" stroke="#0e1024" strokeWidth="1.3"/></svg>);
+    default: return ( // MOVIE - 필름 스트립
+      <svg className="cat-icon" width="26" height="26" viewBox="0 0 28 28"><rect x="3" y="6" width="22" height="16" rx="2" fill="#8a7bff"/><g fill="#0e1024"><rect x="5.5" y="8" width="3" height="3"/><rect x="5.5" y="12.5" width="3" height="3"/><rect x="5.5" y="17" width="3" height="3"/><rect x="19.5" y="8" width="3" height="3"/><rect x="19.5" y="12.5" width="3" height="3"/><rect x="19.5" y="17" width="3" height="3"/></g></svg>);
+  }
+}
+
+// 오늘의 결 · 5단계 정밀 진단
 const QUESTIONS = [
-  {axis:'energy',title:'지금 몸과 마음의 에너지는 어떤가요?',options:[
-    {label:'차분하고 잔잔하다',value:-0.85},{label:'적당히 안정적이다',value:0},{label:'들뜨고 강렬하다',value:0.85}]},
-  {axis:'mood',title:'지금 기분의 색은 어느 쪽에 가깝나요?',options:[
-    {label:'가라앉아 있다',value:-0.85},{label:'덤덤하다',value:0},{label:'밝고 가볍다',value:0.85}]},
-  {axis:'depth',title:'지금 원하는 몰입의 깊이는?',options:[
-    {label:'가볍게 즐기고 싶다',value:-0.85},{label:'상관없다',value:0},{label:'깊이 빠져들고 싶다',value:0.85}]},
+  {axis:'energy',title:'지금 당신의 에너지 상태에 가장 가까운 건?',options:[
+    {label:'완전히 지쳐서 쉬고만 싶다',value:-1},
+    {label:'차분하고 잔잔하다',value:-0.5},
+    {label:'평소와 비슷하다',value:0},
+    {label:'활기차고 들떠 있다',value:0.5},
+    {label:'폭발할 듯 강렬하다',value:1}]},
+  {axis:'mood',title:'지금 마음의 날씨는 어떤가요?',options:[
+    {label:'비 오듯 가라앉아 있다',value:-1},
+    {label:'조금 울적하다',value:-0.5},
+    {label:'무난하고 평온하다',value:0},
+    {label:'산뜻하고 기분 좋다',value:0.5},
+    {label:'햇살처럼 환하다',value:1}]},
+  {axis:'depth',title:'지금 콘텐츠에서 무엇을 원하나요?',options:[
+    {label:'아무 생각 없이 가볍게',value:-1},
+    {label:'부담 없이 즐기고 싶다',value:-0.5},
+    {label:'적당한 몰입이면 충분',value:0},
+    {label:'마음을 울리는 깊이',value:0.5},
+    {label:'끝까지 빠져드는 여운',value:1}]},
 ];
 
 const CONTENT = [
@@ -111,14 +139,24 @@ const MAX_DISTANCE = Math.sqrt(AXES.length*4);
 function distance(a,b){let s=0;for(const{key}of AXES){const d=(a[key]||0)-(b[key]||0);s+=d*d}return Math.sqrt(s)}
 function score(d){return Math.max(0,Math.round((1-d/MAX_DISTANCE)*100))}
 function recommend(user,cat){return CONTENT.filter(it=>cat==='ALL'||it.category===cat).map(it=>{const dd=distance(user,it);return{...it,score:score(dd),_d:dd}}).sort((a,b)=>a._d-b._d).slice(0,6)}
+
 function linkFor(item){
   const q=encodeURIComponent(item.title);
   switch(item.category){
-    case 'NETFLIX': return 'https://www.netflix.com/search?q='+q;
-    case 'MUSIC':
+    case 'NETFLIX': return 'https://www.netflix.com/';
+    case 'MUSIC':   return 'https://music.youtube.com/search?q='+q;
     case 'YOUTUBE': return 'https://www.youtube.com/results?search_query='+q;
-    case 'BOOK': return 'https://www.google.com/search?q='+q+'+\uB3C4\uC11C';
-    default: return 'https://www.google.com/search?q='+q+'+\uC601\uD654';
+    case 'BOOK':    return 'https://www.yes24.com/Product/Search?query='+q;
+    default:        return 'https://www.google.com/search?q='+q+'+영화';
+  }
+}
+function goLabel(cat){
+  switch(cat){
+    case 'NETFLIX': return '넷플릭스에서 보기 ↗';
+    case 'MUSIC':   return 'YouTube Music에서 듣기 ↗';
+    case 'YOUTUBE': return '유튜브에서 보기 ↗';
+    case 'BOOK':    return 'YES24에서 보기 ↗';
+    default:        return '구글에서 검색 ↗';
   }
 }
 
@@ -143,9 +181,9 @@ function Result({user,results,category,setCategory,onRestart}){
       <div className="grid">
         {results.map(item=>(
           <a key={item.id} className="result-card" href={linkFor(item)} target="_blank" rel="noopener noreferrer">
-            <div className="result-top"><span className="emoji">{CATEGORY_EMOJI[item.category]||'✨'}</span><span className="score">{item.score}% 일치</span></div>
+            <div className="result-top"><CategoryIcon cat={item.category}/><span className="score">{item.score}% 일치</span></div>
             <h3>{item.title}</h3><p className="why">{item.why}</p>
-            <span className="go">바로가기 ↗</span>
+            <span className="go">{goLabel(item.category)}</span>
           </a>))}
         {results.length===0&&<p className="empty">해당 카테고리에 추천할 콘텐츠가 없습니다.</p>}
       </div>
