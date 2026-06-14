@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>미디어 별자리 · Media Constellation</title>
+<meta name="description" content="오늘의 기분 좌표로 영화·넷플릭스·음악·책·유튜브를 추천하는 미디어 별자리" />
+<style>
+:root{--bg:#0e1024;--card:rgba(255,255,255,.06);--line:rgba(255,255,255,.12);--text:#eef0ff;--muted:#9aa0c8;--accent:#8a7bff;--accent2:#4fd1c5}
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,"Apple SD Gothic Neo","Malgun Gothic",Pretendard,system-ui,sans-serif;color:var(--text);background:radial-gradient(1200px 600px at 70% -10%,rgba(138,123,255,.25),transparent),radial-gradient(900px 500px at 10% 110%,rgba(79,209,197,.18),transparent),var(--bg);min-height:100vh}
+.app{max-width:760px;margin:0 auto;padding:48px 20px 64px}
+.header{text-align:center;margin-bottom:32px}
+.header h1{font-size:2rem;margin:0 0 8px;letter-spacing:-.02em}
+.tagline{color:var(--muted);margin:0}
+.card,.result-card,.coord{background:var(--card);border:1px solid var(--line);border-radius:18px}
+.question{padding:36px 28px;text-align:center}
+.question h2{font-size:1.4rem;margin:14px 0 28px}
+.progress{display:flex;gap:8px;justify-content:center;margin-bottom:18px}
+.dot{width:28px;height:5px;border-radius:99px;background:var(--line);transition:.25s}
+.dot.on{background:linear-gradient(90deg,var(--accent),var(--accent2))}
+.step-label{color:var(--muted);font-size:.85rem;letter-spacing:.04em;margin:0}
+.options{display:flex;flex-direction:column;gap:12px}
+.option{padding:16px;font-size:1.05rem;color:var(--text);background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:14px;cursor:pointer;transition:.18s}
+.option:hover{border-color:var(--accent);background:rgba(138,123,255,.16);transform:translateY(-1px)}
+.coord{display:flex;flex-direction:column;gap:6px;padding:16px 20px;margin-bottom:20px;text-align:center}
+.coord span{color:var(--muted);font-size:.85rem}
+.coord code{font-size:1rem;color:var(--accent2)}
+.filters{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:22px}
+.chip{padding:8px 16px;border-radius:99px;cursor:pointer;background:transparent;color:var(--muted);border:1px solid var(--line);transition:.18s}
+.chip.active,.chip:hover{color:#fff;border-color:var(--accent);background:rgba(138,123,255,.18)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.result-card{padding:18px;transition:.18s}
+.result-card:hover{transform:translateY(-2px);border-color:var(--accent)}
+.result-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.emoji{font-size:1.4rem}
+.score{font-size:.8rem;font-weight:600;color:var(--accent2);background:rgba(79,209,197,.12);padding:4px 10px;border-radius:99px}
+.result-card h3{margin:0 0 6px;font-size:1.05rem}
+.why{margin:0;color:var(--muted);font-size:.9rem;line-height:1.5}
+.empty{grid-column:1/-1;text-align:center;color:var(--muted)}
+.restart{display:block;margin:28px auto 0;padding:14px 28px;font-size:1rem;color:#fff;cursor:pointer;background:linear-gradient(90deg,var(--accent),var(--accent2));border:none;border-radius:99px;transition:.18s}
+.restart:hover{opacity:.9;transform:translateY(-1px)}
+.footer{text-align:center;color:var(--muted);font-size:.8rem;margin-top:40px}
+@media(max-width:560px){.grid{grid-template-columns:1fr}.header h1{font-size:1.6rem}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script type="text/babel">
+const { useState, useMemo } = React;
+
+const AXES = [
+  { key:'energy', label:'에너지' },
+  { key:'mood',   label:'정서' },
+  { key:'depth',  label:'깊이' },
+];
+const CATEGORIES = [
+  {key:'ALL',label:'전체'},{key:'MOVIE',label:'영화'},{key:'NETFLIX',label:'넷플릭스'},
+  {key:'MUSIC',label:'음악'},{key:'BOOK',label:'책'},{key:'YOUTUBE',label:'유튜브'},
+];
+const CATEGORY_EMOJI = {MOVIE:'🎬',NETFLIX:'📺',MUSIC:'🎵',BOOK:'📚',YOUTUBE:'▶️'};
+
+const QUESTIONS = [
+  {axis:'energy',title:'지금 몸과 마음의 에너지는 어떤가요?',options:[
+    {label:'차분하고 잔잔하다',value:-0.85},{label:'적당히 안정적이다',value:0},{label:'들뜨고 강렬하다',value:0.85}]},
+  {axis:'mood',title:'지금 기분의 색은 어느 쪽에 가깝나요?',options:[
+    {label:'가라앉아 있다',value:-0.85},{label:'덤덤하다',value:0},{label:'밝고 가볍다',value:0.85}]},
+  {axis:'depth',title:'지금 원하는 몰입의 깊이는?',options:[
+    {label:'가볍게 즐기고 싶다',value:-0.85},{label:'상관없다',value:0},{label:'깊이 빠져들고 싶다',value:0.85}]},
+];
+
+const CONTENT = [
+  {id:1,title:"매드맥스: 분노의 도로",category:"MOVIE",energy:0.95,mood:0.1,depth:0.2,why:"쉴 틈 없는 질주와 폭발적인 각성감"},
+  {id:2,title:"맨체스터 바이 더 씨",category:"MOVIE",energy:-0.7,mood:-0.9,depth:0.85,why:"심연의 슬픔을 천천히 가라앉히는 영화"},
+  {id:3,title:"라라랜드",category:"MOVIE",energy:0.4,mood:0.6,depth:0.3,why:"설레면서도 아련한 정서의 균형"},
+  {id:4,title:"인사이드 아웃",category:"MOVIE",energy:0.3,mood:0.5,depth:0.4,why:"밝게 즐기면서 감정을 들여다보기"},
+  {id:5,title:"셔터 아일랜드",category:"MOVIE",energy:0.2,mood:-0.4,depth:0.9,why:"끝까지 몰입하게 하는 심리 스릴러"},
+  {id:6,title:"기생충",category:"MOVIE",energy:0.5,mood:-0.2,depth:0.8,why:"긴장과 사유가 함께 차오르는 작품"},
+  {id:7,title:"더 글로리",category:"NETFLIX",energy:0.5,mood:-0.6,depth:0.7,why:"서늘하게 몰입되는 복수극"},
+  {id:8,title:"오징어 게임",category:"NETFLIX",energy:0.85,mood:-0.3,depth:0.5,why:"강렬한 긴장과 빠른 전개"},
+  {id:9,title:"브루클린 나인-나인",category:"NETFLIX",energy:0.6,mood:0.85,depth:-0.6,why:"가볍고 유쾌하게 웃고 싶을 때"},
+  {id:10,title:"오티스의 비밀상담소",category:"NETFLIX",energy:0.35,mood:0.6,depth:0.2,why:"따뜻하고 산뜻한 성장 드라마"},
+  {id:11,title:"블랙 미러",category:"NETFLIX",energy:0.2,mood:-0.5,depth:0.85,why:"생각이 깊어지는 디스토피아"},
+  {id:12,title:"우리의 지구",category:"NETFLIX",energy:-0.6,mood:0.4,depth:0.3,why:"차분하게 마음을 가라앉히는 자연 다큐"},
+  {id:13,title:"Daft Punk - Get Lucky",category:"MUSIC",energy:0.7,mood:0.8,depth:-0.5,why:"기분을 끌어올리는 그루브"},
+  {id:14,title:"Ludovico Einaudi - Nuvole Bianche",category:"MUSIC",energy:-0.8,mood:-0.5,depth:0.7,why:"고요히 가라앉는 피아노"},
+  {id:15,title:"IU - 밤편지",category:"MUSIC",energy:-0.5,mood:0.1,depth:0.4,why:"잔잔하고 다정한 위로"},
+  {id:16,title:"Linkin Park - Numb",category:"MUSIC",energy:0.85,mood:-0.6,depth:0.4,why:"강렬하게 감정을 토해내고 싶을 때"},
+  {id:17,title:"Bruno Mars - Uptown Funk",category:"MUSIC",energy:0.9,mood:0.9,depth:-0.7,why:"신나게 몸을 흔들고 싶을 때"},
+  {id:18,title:"Bon Iver - Holocene",category:"MUSIC",energy:-0.6,mood:-0.2,depth:0.8,why:"내면으로 깊이 가라앉는 사운드"},
+  {id:19,title:"미드나잇 라이브러리",category:"BOOK",energy:0.1,mood:0.3,depth:0.6,why:"삶을 돌아보게 하는 따뜻한 소설"},
+  {id:20,title:"데미안",category:"BOOK",energy:-0.2,mood:-0.1,depth:0.9,why:"자아를 깊이 탐구하는 고전"},
+  {id:21,title:"달러구트 꿈 백화점",category:"BOOK",energy:0.2,mood:0.7,depth:0,why:"포근하고 가볍게 읽히는 판타지"},
+  {id:22,title:"사피엔스",category:"BOOK",energy:0.3,mood:0.1,depth:0.95,why:"사고를 확장하는 지적 몰입"},
+  {id:23,title:"아몬드",category:"BOOK",energy:0,mood:-0.4,depth:0.7,why:"잔잔하지만 깊은 울림의 성장담"},
+  {id:24,title:"마션",category:"BOOK",energy:0.7,mood:0.5,depth:0.4,why:"유쾌하고 박진감 있는 생존기"},
+  {id:25,title:"Kurzgesagt - 우주 다큐",category:"YOUTUBE",energy:0.4,mood:0.4,depth:0.8,why:"지적 호기심을 채우는 애니 다큐"},
+  {id:26,title:"Lofi Girl - 공부 라디오",category:"YOUTUBE",energy:-0.8,mood:0.1,depth:-0.2,why:"차분히 집중하고 싶을 때"},
+  {id:27,title:"침착맨 - 토크 라이브",category:"YOUTUBE",energy:0.4,mood:0.8,depth:-0.8,why:"부담 없이 웃으며 보는 토크"},
+  {id:28,title:"MrBeast - 챌린지",category:"YOUTUBE",energy:0.95,mood:0.7,depth:-0.7,why:"강렬하고 빠른 자극"},
+  {id:29,title:"Bob Ross - 그림 그리기",category:"YOUTUBE",energy:-0.9,mood:0.5,depth:0.1,why:"마음을 가라앉히는 힐링 영상"},
+  {id:30,title:"TED - 인생 강연",category:"YOUTUBE",energy:0.3,mood:0.3,depth:0.85,why:"생각할 거리를 주는 깊은 강연"},
+];
+
+const MAX_DISTANCE = Math.sqrt(AXES.length*4);
+function distance(a,b){let s=0;for(const{key}of AXES){const d=(a[key]||0)-(b[key]||0);s+=d*d}return Math.sqrt(s)}
+function score(d){return Math.max(0,Math.round((1-d/MAX_DISTANCE)*100))}
+function recommend(user,cat){return CONTENT.filter(it=>cat==='ALL'||it.category===cat).map(it=>{const dd=distance(user,it);return{...it,score:score(dd),_d:dd}}).sort((a,b)=>a._d-b._d).slice(0,6)}
+
+function Question({index,total,question,onChoose}){
+  return (
+    <section className="card question">
+      <div className="progress">{Array.from({length:total}).map((_,i)=><span key={i} className={'dot'+(i<=index?' on':'')}/>)}</div>
+      <p className="step-label">오늘의 결 · {index+1} / {total}</p>
+      <h2>{question.title}</h2>
+      <div className="options">{question.options.map(o=>(
+        <button key={o.label} className="option" onClick={()=>onChoose(question.axis,o.value)}>{o.label}</button>))}</div>
+    </section>
+  );
+}
+function Result({user,results,category,setCategory,onRestart}){
+  return (
+    <section className="result">
+      <div className="coord"><span>오늘의 좌표</span>
+        <code>에너지 {user.energy.toFixed(2)} · 정서 {user.mood.toFixed(2)} · 깊이 {user.depth.toFixed(2)}</code></div>
+      <div className="filters">{CATEGORIES.map(c=>(
+        <button key={c.key} className={'chip'+(category===c.key?' active':'')} onClick={()=>setCategory(c.key)}>{c.label}</button>))}</div>
+      <div className="grid">
+        {results.map(item=>(
+          <article key={item.id} className="result-card">
+            <div className="result-top"><span className="emoji">{CATEGORY_EMOJI[item.category]||'✨'}</span><span className="score">{item.score}% 일치</span></div>
+            <h3>{item.title}</h3><p className="why">{item.why}</p>
+          </article>))}
+        {results.length===0&&<p className="empty">해당 카테고리에 추천할 콘텐츠가 없습니다.</p>}
+      </div>
+      <button className="restart" onClick={onRestart}>다시 진단하기</button>
+    </section>
+  );
+}
+function App(){
+  const [step,setStep]=useState(0);
+  const [answers,setAnswers]=useState({});
+  const [category,setCategory]=useState('ALL');
+  const user=useMemo(()=>({energy:answers.energy||0,mood:answers.mood||0,depth:answers.depth||0}),[answers]);
+  const results=useMemo(()=>recommend(user,category),[user,category]);
+  function choose(axis,value){const next={...answers,[axis]:value};setAnswers(next);if(step<QUESTIONS.length-1)setStep(step+1);else setStep('result')}
+  function restart(){setAnswers({});setCategory('ALL');setStep(0)}
+  return (
+    <div className="app">
+      <header className="header"><h1>✨ 미디어 별자리</h1><p className="tagline">오늘의 결을 따라, 당신에게 가장 가까운 콘텐츠를 찾습니다</p></header>
+      {step!=='result'&&<Question index={step} total={QUESTIONS.length} question={QUESTIONS[step]} onChoose={choose}/>}
+      {step==='result'&&<Result user={user} results={results} category={category} setCategory={setCategory} onRestart={restart}/>}
+      <footer className="footer">좌표 기반 추천 엔진 · 유클리드 거리 매칭</footer>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
