@@ -30,7 +30,9 @@ body{margin:0;font-family:-apple-system,"Apple SD Gothic Neo","Malgun Gothic",Pr
 .chip{padding:8px 16px;border-radius:99px;cursor:pointer;background:transparent;color:var(--muted);border:1px solid var(--line);transition:.18s}
 .chip.active,.chip:hover{color:#fff;border-color:var(--accent);background:rgba(138,123,255,.18)}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.result-card{padding:18px;transition:.18s}
+.result-card{padding:18px;transition:.18s;display:block;text-decoration:none;color:inherit}
+.go{display:inline-block;margin-top:10px;font-size:.8rem;color:var(--accent);font-weight:600}
+.result-card:hover .go{text-decoration:underline}
 .result-card:hover{transform:translateY(-2px);border-color:var(--accent)}
 .result-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
 .emoji{font-size:1.4rem}
@@ -109,6 +111,16 @@ const MAX_DISTANCE = Math.sqrt(AXES.length*4);
 function distance(a,b){let s=0;for(const{key}of AXES){const d=(a[key]||0)-(b[key]||0);s+=d*d}return Math.sqrt(s)}
 function score(d){return Math.max(0,Math.round((1-d/MAX_DISTANCE)*100))}
 function recommend(user,cat){return CONTENT.filter(it=>cat==='ALL'||it.category===cat).map(it=>{const dd=distance(user,it);return{...it,score:score(dd),_d:dd}}).sort((a,b)=>a._d-b._d).slice(0,6)}
+function linkFor(item){
+  const q=encodeURIComponent(item.title);
+  switch(item.category){
+    case 'NETFLIX': return 'https://www.netflix.com/search?q='+q;
+    case 'MUSIC':
+    case 'YOUTUBE': return 'https://www.youtube.com/results?search_query='+q;
+    case 'BOOK': return 'https://www.google.com/search?q='+q+'+\uB3C4\uC11C';
+    default: return 'https://www.google.com/search?q='+q+'+\uC601\uD654';
+  }
+}
 
 function Question({index,total,question,onChoose}){
   return (
@@ -130,10 +142,11 @@ function Result({user,results,category,setCategory,onRestart}){
         <button key={c.key} className={'chip'+(category===c.key?' active':'')} onClick={()=>setCategory(c.key)}>{c.label}</button>))}</div>
       <div className="grid">
         {results.map(item=>(
-          <article key={item.id} className="result-card">
+          <a key={item.id} className="result-card" href={linkFor(item)} target="_blank" rel="noopener noreferrer">
             <div className="result-top"><span className="emoji">{CATEGORY_EMOJI[item.category]||'✨'}</span><span className="score">{item.score}% 일치</span></div>
             <h3>{item.title}</h3><p className="why">{item.why}</p>
-          </article>))}
+            <span className="go">바로가기 ↗</span>
+          </a>))}
         {results.length===0&&<p className="empty">해당 카테고리에 추천할 콘텐츠가 없습니다.</p>}
       </div>
       <button className="restart" onClick={onRestart}>다시 진단하기</button>
