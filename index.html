@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>미디어 별자리 · Media Constellation</title>
 <meta name="description" content="오늘의 기분 좌표로 영화·넷플릭스·음악·책·유튜브를 추천하는 미디어 별자리" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
 <style>
 :root{
   --ink:#23243a;--muted:#7b7e9e;--line:rgba(40,40,90,.08);
@@ -14,7 +15,7 @@
 *{box-sizing:border-box}
 html,body{margin:0}
 body{
-  font-family:-apple-system,"Apple SD Gothic Neo","Malgun Gothic",Pretendard,system-ui,sans-serif;
+  font-family:'Pretendard Variable',Pretendard,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
   color:var(--ink);min-height:100vh;position:relative;overflow-x:hidden;
   background:
     radial-gradient(60vw 50vw at 12% -8%,rgba(124,92,255,.20),transparent 60%),
@@ -36,6 +37,11 @@ body{
 .header h1{font-size:2.4rem;margin:0 0 10px;letter-spacing:-.03em;font-weight:800;
   background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
 .tagline{color:var(--muted);margin:0;font-size:1.02rem}
+.intro{max-width:700px;margin:0 auto 24px;text-align:center}
+.intro p{color:#4b4d68;font-size:.96rem;line-height:1.7;margin:0 0 14px}
+.intro p b{color:#7c5cff;font-weight:700}
+.intro .steps{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.intro .steps span{background:rgba(255,255,255,.72);border:1px solid var(--line);border-radius:99px;padding:8px 15px;font-size:.82rem;color:#5a5a72;font-weight:600}
 
 .card,.result-card,.coord{background:var(--card);border:1px solid var(--line);border-radius:22px}
 .card,.coord{box-shadow:0 18px 50px -20px rgba(80,70,160,.35)}
@@ -271,6 +277,18 @@ function Result({user,results,category,setCategory,onRestart}){
     </section>
   );
 }
+function Intro(){
+  return (
+    <section className="intro">
+      <p><b>‘오늘의 결’</b>은 그저 재미로 고르는 추천이 아닙니다. 감정을 <b>에너지(각성)·정서(기분)·깊이(몰입)</b> 세 축의 좌표로 보는 정서심리학의 <b>정서 원형 모델(Circumplex Model of Affect)</b>에서 출발해, 지금 당신의 마음 상태를 읽어냅니다.</p>
+      <div className="steps">
+        <span>① 3단계 질문으로 오늘의 감정 좌표 측정</span>
+        <span>② 콘텐츠를 같은 좌표로 분석 · BBC·모던 라이브러리·빌보드 등 공인 리스트 기반</span>
+        <span>③ 유클리드 거리로 가장 가까운 작품 매칭</span>
+      </div>
+    </section>
+  );
+}
 function App(){
   const [step,setStep]=useState(0);
   const [answers,setAnswers]=useState({});
@@ -282,9 +300,10 @@ function App(){
   return (
     <div className="app">
       <header className="header"><h1>✨ 미디어 별자리</h1><p className="tagline">오늘의 결을 따라, 당신에게 가장 가까운 콘텐츠를 찾습니다</p></header>
+      {step!=='result'&&<Intro/>}
       {step!=='result'&&<Question index={step} total={QUESTIONS.length} question={QUESTIONS[step]} onChoose={choose}/>}
       {step==='result'&&<Result user={user} results={results} category={category} setCategory={setCategory} onRestart={restart}/>}
-      <footer className="footer">좌표 기반 추천 엔진 · 유클리드 거리 매칭</footer>
+      <footer className="footer">정서심리학 좌표 기반 추천 · 유클리드 거리 매칭</footer>
     </div>
   );
 }
